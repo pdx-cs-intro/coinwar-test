@@ -17,6 +17,11 @@ parser.add_argument(
     action="store_true",
 )
 parser.add_argument(
+    '--input-is-file', '-i',
+    help='supply file argument on stdin (ugh)',
+    action="store_true",
+)
+parser.add_argument(
     '--program', '-p',
     help='program path (coin-war.py)',
     default="coin-war.py",
@@ -31,7 +36,11 @@ parser.add_argument(
     help='temp directory for built tests (.tests)',
     default=".tests",
 )
-args = parser.parse_args()
+args, arguments = parser.parse_known_args()
+
+if args.file and args.input_is_file:
+    print("only one of -f and -i can be used", file=sys.stderr)
+    exit(1)
 
 # Source of tests to be run.
 srcdir = args.srcdir
@@ -66,8 +75,11 @@ for test in sorted(os.listdir(srcdir)):
     # Run the test.
     inputstr = None
     cmd = ["python", args.program]
+    cmd.extend(arguments)
     if args.file:
         cmd.append(testpath)
+    elif args.input_is_file:
+        inputstr = testpath
     else:
         with open(testpath, "r") as f:
             inputstr = f.read()
