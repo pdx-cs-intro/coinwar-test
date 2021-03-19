@@ -18,7 +18,7 @@ parser.add_argument(
 )
 parser.add_argument(
     '--program', '-p',
-    help='program path',
+    help='program path (coin-war.py)',
     default="coin-war.py",
 )
 parser.add_argument(
