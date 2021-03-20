@@ -12,6 +12,11 @@ parser.add_argument(
     action="store_true",
 )
 parser.add_argument(
+    '--cont', '-c',
+    help='continue after failing test',
+    action="store_true",
+)
+parser.add_argument(
     '--file', '-f',
     help='supply file argument instead of using stdin',
     action="store_true",
@@ -52,6 +57,7 @@ testdir = args.testdir
 shutil.rmtree(testdir, ignore_errors=True)
 os.mkdir(testdir)
 testpat = re.compile(r"(test-[0-9]*)\.txt")
+outpat = re.compile(r"[012]")
 for test in sorted(os.listdir(srcdir)):
     # Check that test is actually a test filename.
     matched = testpat.fullmatch(test)
@@ -90,17 +96,37 @@ for test in sorted(os.listdir(srcdir)):
         input=inputstr,
     )
 
-    # Show test result.
+    # Check for test run success.
     if result.returncode != 0:
         print(f"failed with exit status {result.returncode}")
         print(result.stderr, end="")
-        continue
+        if args.cont:
+            continue
+        break
     output = result.stdout.split("\n")
     if len(output) < 2:
         print("failed to produce output")
-        continue
-    got = output[-2].strip()
+        if args.cont:
+            continue
+        break
+
+    # Find the result line.
+    got = None
+    for line in reversed(output):
+        text = line.strip()
+        if outpat.fullmatch(text):
+            got = text
+            break
+    if got is None:
+        print(f"did not find result line")
+        if args.cont:
+            continue
+        break
+
+    # Show test result.
     if expected != got:
         print(f"expected {expected} got {got}")
+        if not args.cont:
+            break
     else:
         print("passed")
